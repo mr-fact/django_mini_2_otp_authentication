@@ -1,7 +1,35 @@
+from datetime import datetime, timedelta
+
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
+
+
+phone_validator = RegexValidator(
+    regex=r'09\d{9}',
+    message='phone number must be entered in the (09---------) format '
+)
+
+
+class OTP(models.Model):
+    user = models.ForeignKey(
+        'User', on_delete=models.CASCADE, related_name='OTPs', null=True, blank=True, default=None
+    )
+    phone_number = models.CharField(max_length=15, validators=[phone_validator, ])
+    created_at = models.DateTimeField(default=datetime.now)
+    otp = models.CharField(max_length=15)
+
+    @classmethod
+    def validate(cls, phone_number, otp_code):
+        try:
+            return cls.objects.get(
+                phone_number=phone_number,
+                otp=otp_code,
+                created_at__gte=datetime.now()-timedelta(minutes=5)
+            )
+        except cls.DoesNotExist:
+            return None
 
 
 class UserManager(BaseUserManager):
@@ -32,12 +60,6 @@ class UserManager(BaseUserManager):
         return self.create_user(phone_number, password, **extra_fields)
 
 
-phone_validator = RegexValidator(
-    regex=r'09\d{9}',
-    message='phone number must be entered in the (09---------) format '
-)
-
-
 class User(AbstractUser):
     phone_number = models.CharField(max_length=15, unique=True, validators=[phone_validator, ])
     username = None
@@ -50,5 +72,5 @@ class User(AbstractUser):
     def __str__(self):
         return self.phone_number
 
-    def check_otp(self, otp):
-        return otp == '1111'
+    def check_otp(self, otp_code):
+        return OTP.validate(self.phone_number, otp_code)

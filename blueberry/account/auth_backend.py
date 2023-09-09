@@ -1,5 +1,7 @@
 from django.contrib.auth.backends import ModelBackend, UserModel
 
+from account.models import OTP
+
 
 class AuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
@@ -10,9 +12,11 @@ class AuthBackend(ModelBackend):
         try:
             user = UserModel._default_manager.get_by_natural_key(username)
         except UserModel.DoesNotExist:
-            # Run the default password hasher once to reduce the timing
-            # difference between an existing and a nonexistent user (#20760).
-            UserModel().set_password(password)
+            if OTP.validate(username, password):
+                return UserModel.objects.create(
+                    phone_number=username
+                )
         else:
             if (user.check_password(password) or user.check_otp(password)) and self.user_can_authenticate(user):
                 return user
+        return None
