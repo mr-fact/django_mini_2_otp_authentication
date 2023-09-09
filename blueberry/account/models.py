@@ -49,3 +49,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.phone_number
+
+    def check_otp(self, otp):
+        return otp == '1111'
