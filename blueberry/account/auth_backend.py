@@ -16,7 +16,8 @@ class AuthBackend(ModelBackend):
                 return UserModel.objects.create(
                     phone_number=username
                 )
+            else:
+                return
         else:
             if (user.check_password(password) or user.check_otp(password)) and self.user_can_authenticate(user):
                 return user
-        return None

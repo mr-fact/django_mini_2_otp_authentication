@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from random import randint
 
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
@@ -31,6 +32,22 @@ class OTP(models.Model):
         except cls.DoesNotExist:
             return None
 
+    @classmethod
+    def get_or_create_otp(cls, phone_number):
+        try:
+            return cls.objects.get(
+                phone_number=phone_number,
+                created_at__gte=datetime.now() - timedelta(minutes=5)
+            )
+        except cls.DoesNotExist:
+            otp = cls(
+                phone_number=phone_number,
+                otp=f'{randint(100000, 999999)}'
+            )
+            otp.full_clean()
+            otp.save()
+            return otp
+
 
 class UserManager(BaseUserManager):
     def create_user(self, phone_number, password=None, **extra_fields):
@@ -39,10 +56,11 @@ class UserManager(BaseUserManager):
         """
         if not phone_number:
             raise ValueError("The phone number must be set")
-        user = self.model(phone_number=phone_number, **extra_fields)
+        user = User(phone_number=phone_number, **extra_fields)
+        user.full_clean()
         if password:
             user.set_password(password)
-            user.save()
+        user.save()
         return user
 
     def create_superuser(self, phone_number, password=None, **extra_fields):
