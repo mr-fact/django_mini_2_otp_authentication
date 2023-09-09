@@ -22,8 +22,10 @@ class AuthBackend(ModelBackend):
             else:
                 return
         else:
-            if (user.check_password(password) or user.check_otp(password)) and self.user_can_authenticate(user):
-                otp = user.check_otp(password)
-                otp.used = True
-                otp.save()
+            otp_check = user.check_otp(password)
+            password_check = user.check_password(password)
+            if (otp_check or password_check) and self.user_can_authenticate(user):
+                if otp_check:
+                    otp_check.used = True
+                    otp_check.save()
                 return user
