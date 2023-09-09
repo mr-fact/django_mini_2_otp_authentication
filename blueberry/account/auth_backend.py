@@ -12,7 +12,10 @@ class AuthBackend(ModelBackend):
         try:
             user = UserModel._default_manager.get_by_natural_key(username)
         except UserModel.DoesNotExist:
-            if OTP.validate(username, password):
+            otp = OTP.validate(username, password)
+            if otp:
+                otp.used = True
+                otp.save()
                 return UserModel.objects.create(
                     phone_number=username
                 )
@@ -20,4 +23,7 @@ class AuthBackend(ModelBackend):
                 return
         else:
             if (user.check_password(password) or user.check_otp(password)) and self.user_can_authenticate(user):
+                otp = user.check_otp(password)
+                otp.used = True
+                otp.save()
                 return user

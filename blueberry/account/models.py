@@ -20,6 +20,7 @@ class OTP(models.Model):
     phone_number = models.CharField(max_length=15, validators=[phone_validator, ])
     created_at = models.DateTimeField(default=datetime.now)
     otp = models.CharField(max_length=15)
+    used = models.BooleanField(default=False)
 
     @classmethod
     def validate(cls, phone_number, otp_code):
@@ -27,7 +28,8 @@ class OTP(models.Model):
             return cls.objects.get(
                 phone_number=phone_number,
                 otp=otp_code,
-                created_at__gte=datetime.now()-timedelta(minutes=5)
+                created_at__gte=datetime.now()-timedelta(minutes=5),
+                used=False
             )
         except cls.DoesNotExist:
             return None
